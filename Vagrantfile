@@ -73,3 +73,44 @@ config.vm.provision "ansible" do |ansible|
 config.vm.network "forwarded_port", guest: 3000, host: 3000  
   end
 end
+
+
+
+
+
+
+
+
+
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile for DevOps Configuration Management IP
+Vagrant.configure("2") do |config|
+  
+  # Use Jeff Geerling's Ubuntu 20.04 box
+  config.vm.box = "geerlingguy/ubuntu2004"
+
+  # Forward port 3000 from guest to host to allow access to the web app
+  config.vm.network "forwarded_port", guest: 3000, host: 3000, host_ip: "127.0.0.1"
+
+  # Optional: Private network access (uncomment if needed)
+  # config.vm.network "private_network", ip: "192.168.56.10"
+
+  # Sync the project directory to the /vagrant directory on the VM
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+
+  # Increase resources to handle Docker and app requirements
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "ecommerce-app"
+    vb.memory = "2048"
+    vb.cpus = 2
+  end
+
+  # Use Ansible Local to provision the VM (Ansible runs inside the VM)
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.playbook = "playbook.yml"
+    ansible.become = true              # Run tasks with sudo
+    ansible.verbose = "v"              # Verbose output for easier debugging
+  end
+end

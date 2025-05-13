@@ -21,11 +21,16 @@ This project involved the containerization and deployment of a full-stack yolo a
 - Client: `laurasoy1/brian-yolo-client:v1.0.0`
 - Backend: `laurasoy1/brian-yolo-backend:v1.0.0`
 
-![Alt text](image.png)
+## dockerhub upload
+![Alt text](./client%20image.png)
+
+
+## backend image upload
+![Alt text](./backend%20image.png)
+
 
 ## How to run the app
 Use vagrant up --provison command
-
 
 
 

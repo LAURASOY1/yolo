@@ -12,7 +12,7 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "ubuntu/focal64"
+   config.vm.box = "geerlingguy/ubuntu2004"
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -53,6 +53,15 @@ Vagrant.configure("2") do |config|
   #   # Display the VirtualBox GUI when booting the machine
   #   vb.gui = true
   #
+  config.vm.provider "virtualbox" do |vb|
+    # Display the VirtualBox GUI when booting the machine
+    # vb.gui = true
+    #
+    # Customize the amount of memory on the VM:
+    vb.memory = "2048"
+    vb.cpus = 2
+    vb.name = "ecommerce-app-vm"
+  end
   #   # Customize the amount of memory on the VM:
   #   vb.memory = "1024"
   # end
@@ -68,49 +77,17 @@ Vagrant.configure("2") do |config|
   #   apt-get install -y apache2
   # SHELL
   # Provisioning configuration for Ansible.
-config.vm.provision "ansible" do |ansible|
-  ansible.playbook = "playbook.yml"
-config.vm.network "forwarded_port", guest: 3000, host: 3000  
-  end
-end
-
-
-
-
-
-
-
-
-
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
-# Vagrantfile for DevOps Configuration Management IP
-Vagrant.configure("2") do |config|
+  config.vm.network "forwarded_port", guest: 3000, host: 3000  # Frontend
+  config.vm.network "forwarded_port", guest: 5000, host: 5000  # Backend API
+  config.vm.network "forwarded_port", guest: 27017, host: 27017  # MongoDB
   
-  # Use Jeff Geerling's Ubuntu 20.04 box
-  config.vm.box = "geerlingguy/ubuntu2004"
-
-  # Forward port 3000 from guest to host to allow access to the web app
-  config.vm.network "forwarded_port", guest: 3000, host: 3000, host_ip: "127.0.0.1"
-
-  # Optional: Private network access (uncomment if needed)
-  # config.vm.network "private_network", ip: "192.168.56.10"
-
-  # Sync the project directory to the /vagrant directory on the VM
-  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
-
-  # Increase resources to handle Docker and app requirements
-  config.vm.provider "virtualbox" do |vb|
-    vb.name = "ecommerce-app"
-    vb.memory = "2048"
-    vb.cpus = 2
-  end
-
-  # Use Ansible Local to provision the VM (Ansible runs inside the VM)
+  # Provisioning configuration for Ansible.
   config.vm.provision "ansible_local" do |ansible|
     ansible.playbook = "playbook.yml"
-    ansible.become = true              # Run tasks with sudo
-    ansible.verbose = "v"              # Verbose output for easier debugging
+    ansible.install_mode = "pip"  # Install Ansible via pip
+    ansible.version = "latest"
+    ansible.become = true
+    ansible.inventory_path = "inventory.yml"
   end
 end
+

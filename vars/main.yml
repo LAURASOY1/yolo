@@ -1,0 +1,55 @@
+---
+# Repository settings
+app_repo: "https://github.com/LAURASOY1/yolo"
+app_branch: "main"
+app_path: "/opt/ecommerce-app"
+
+# Docker settings
+docker_compose_version: "1.29.2"
+docker_network_name: "app-net"
+docker_subnet: "172.20.0.0/16"
+
+# Container settings
+mongodb_container_name: "app-ip-mongo"
+mongodb_port: 27017
+mongodb_volume: "app-mongo-data"
+
+backend_container_name: "app-ip-backend"
+backend_port: 5000
+backend_image: "app-backend:latest"
+
+frontend_container_name: "app-ip-frontend"
+frontend_port: 3000
+frontend_image: "app-frontend:latest"
+
+# Application settings
+app_domain: "localhost"
+
+# MongoDB connection string for backend
+mongo_uri: "mongodb://app-ip-mongo:27017/ecommerce"
+
+# Environment variables
+backend_env:
+  NODE_ENV: "production"
+  MONGO_URI: "mongodb://app-ip-mongo:27017/ecommerce"
+  PORT: "5000"
+
+frontend_env:
+  NODE_ENV: "production"
+  REACT_APP_API_URL: "http://localhost:5000/api"
+  PORT: "3000"
+
+# Docker image settings
+use_alpine_base: true
+node_version: "14-alpine"
+mongo_version: "latest"
+
+# Project directories
+project_root: "/vagrant"
+backend_dir: "{{ project_root }}/backend"
+frontend_dir: "{{ project_root }}/client"
+
+# Healthcheck settings
+health_check_retries: 10
+health_check_delay: 5
+health_check_timeout: 60

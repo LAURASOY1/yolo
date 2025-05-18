@@ -1,9 +1,113 @@
----
-- name: Ansible playbook to dockerize and run yolo e-commerce app using ansible
+- name: Deploy e-commerce application
   hosts: all
   become: true
-  roles: 
-    - frontend-deployment
-    - setup-mongodb   
-    - backend-deployment
-    
+  vars_files:
+    - vars/main.yml
+
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required system packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - git
+        - docker.io
+        - docker-compose
+        - python3-pip
+        - nodejs
+        - npm
+
+  roles:
+    - role: setup-mongodb
+    - role: backend-deployment
+    - role: frontend-deployment
+
+  post_tasks:
+    - name: Check backend accessibility
+      uri:
+        url: "http://localhost:{{ backend_port }}/api/products"
+        return_content: yes
+      register: backend_response
+      until: backend_response.status == 200
+      retries: 10
+      delay: 5
+      ignore_errors: true
+
+    - name: Check frontend accessibility
+      uri:
+        url: "http://localhost:{{ frontend_port }}"
+        return_content: yes
+      register: frontend_response
+      until: frontend_response.status == 200
+      retries: 10
+      delay: 5
+      ignore_errors: true
+
+    - name: Show application URLs
+      debug:
+        msg: |
+          Backend API is running at http://localhost:{{ backend_port }}
+          Frontend is running at http://localhost:{{ frontend_port }}
+
+
+
+- name: Deploy e-commerce application
+  hosts: all
+  become: true
+  vars_files:
+    - vars/main.yml
+
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required system packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - git
+        - docker.io
+        - docker-compose
+        - python3-pip
+        - nodejs
+        - npm
+
+  roles:
+    - role: setup-mongodb
+    - role: backend-deployment
+    - role: frontend-deployment
+
+  post_tasks:
+    - name: Check backend accessibility
+      uri:
+        url: "http://localhost:{{ backend_port }}/api/products"
+        return_content: yes
+      register: backend_response
+      until: backend_response.status == 200
+      retries: 10
+      delay: 5
+      ignore_errors: true
+
+    - name: Check frontend accessibility
+      uri:
+        url: "http://localhost:{{ frontend_port }}"
+        return_content: yes
+      register: frontend_response
+      until: frontend_response.status == 200
+      retries: 10
+      delay: 5
+      ignore_errors: true
+
+    - name: Show application URLs
+      debug:
+        msg: |
+          Backend API is running at http://localhost:{{ backend_port }}
+          Frontend is running at http://localhost:{{ frontend_port }}

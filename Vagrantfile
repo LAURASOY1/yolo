@@ -1,93 +1,79 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
 Vagrant.configure("2") do |config|
-  # The most common configuration options are documented and commented below.
-  # For a complete reference, please see the online documentation at
-  # https://docs.vagrantup.com.
+  config.vm.box = "geerlingguy/ubuntu2004"
 
-  # Every Vagrant development environment requires a box. You can search for
-  # boxes at https://vagrantcloud.com/search.
-   config.vm.box = "geerlingguy/ubuntu2004"
-
-  # Disable automatic box update checking. If you disable this, then
-  # boxes will only be checked for updates when the user runs
-  # `vagrant box outdated`. This is not recommended.
-  # config.vm.box_check_update = false
-
-  # Create a forwarded port mapping which allows access to a specific port
-  # within the machine from a port on the host machine. In the example below,
-  # accessing "localhost:8080" will access port 80 on the guest machine.
-  # NOTE: This will enable public access to the opened port
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
-
-  # Create a forwarded port mapping which allows access to a specific port
-  # within the machine from a port on the host machine and only allow access
-  # via 127.0.0.1 to disable public access
-  # config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
-
-  # Create a private network, which allows host-only access to the machine
-  # using a specific IP.
-  # config.vm.network "private_network", ip: "192.168.33.10"
-
-  # Create a public network, which generally matched to bridged network.
-  # Bridged networks make the machine appear as another physical device on
-  # your network.
-  # config.vm.network "public_network"
-
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
-  # Provider-specific configuration so you can fine-tune various
-  # backing providers for Vagrant. These expose provider-specific options.
-  # Example for VirtualBox:
-  #
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
   config.vm.provider "virtualbox" do |vb|
-    # Display the VirtualBox GUI when booting the machine
-    # vb.gui = true
-    #
-    # Customize the amount of memory on the VM:
     vb.memory = "2048"
     vb.cpus = 2
     vb.name = "ecommerce-app-vm"
   end
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
 
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
-  # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   apt-get update
-  #   apt-get install -y apache2
-  # SHELL
-  # Provisioning configuration for Ansible.
-  config.vm.network "forwarded_port", guest: 3000, host: 3000  # Frontend
-  config.vm.network "forwarded_port", guest: 5000, host: 5000  # Backend API
-  config.vm.network "forwarded_port", guest: 27017, host: 27017  # MongoDB
-  
-  # Provisioning configuration for Ansible.
-  config.vm.provision "ansible_local" do |ansible|
-    ansible.playbook = "playbook.yml"
-    ansible.install_mode = "pip"  # Install Ansible via pip
-    ansible.version = "latest"
-    ansible.become = true
-    ansible.inventory_path = "inventory.yml"
-  end
+  # Forward necessary ports
+  config.vm.network "forwarded_port", guest: 3000, host: 3300    # Frontend (changed from 3000)
+  config.vm.network "forwarded_port", guest: 5000, host: 5500  # Backend API
+  config.vm.network "forwarded_port", guest: 27018, host: 27017 # MongoDB
+  config.vm.provision "shell", path: "fix_python_apt.sh"
+
+  # Provisioning script
+  config.vm.provision "shell", inline: <<-SHELL
+    handle_error() {
+      local exit_code=$1
+      local error_msg=$2
+      local success_msg=$3
+      
+      if [ $exit_code -ne 0 ]; then
+        echo "ERROR: $error_msg (exit code: $exit_code)"
+        echo "Please check logs above for more details."
+        exit $exit_code
+      else
+        echo "SUCCESS: $success_msg"
+      fi
+    }
+
+    echo "===== Starting VM provisioning ====="
+
+    echo "Updating package index..."
+    sudo apt-get update -y
+    handle_error $? "Failed to update package index" "Package index updated successfully"
+
+    echo "Installing Python 3, pip, and venv..."
+    sudo apt-get install -y python3 python3-pip python3-venv software-properties-common
+    handle_error $? "Failed to install Python 3 packages" "Python 3, pip, and venv installed"
+
+    echo "Checking Python version:"
+    python3 --version
+    handle_error $? "Python 3 not found or broken" "Python 3 is working"
+
+    echo "Checking pip version:"
+    pip3 --version
+    handle_error $? "pip3 not found or broken" "pip3 is working"
+
+    echo "Installing Ansible via apt..."
+    sudo apt-get install -y ansible
+    handle_error $? "Failed to install Ansible" "Ansible installed successfully"
+
+    echo "Checking Ansible version:"
+    ansible --version
+    handle_error $? "Ansible not working properly" "Ansible is working"
+
+    echo "Setting DNS to Google DNS to avoid network issues..."
+    echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf >/dev/null
+
+    echo "Checking for Ansible inventory and playbook files..."
+    if [ -f /vagrant/inventory.yml ] && [ -f /vagrant/playbook.yml ]; then
+      echo "Running Ansible playbook..."
+      cd /vagrant
+      ansible-playbook -i inventory.yml playbook.yml
+      handle_error $? "Failed to run Ansible playbook" "Ansible playbook completed successfully"
+    else
+      echo "WARNING: inventory.yml or playbook.yml not found in /vagrant directory. Skipping Ansible run."
+      echo "Please place these files in the directory shared with the VM."
+    fi
+
+    
+    echo "===== VM provisioning completed ====="
+  SHELL
 end
 

@@ -1,14 +1,29 @@
 ---
+# First create the Docker network
+- name: Create Docker network for application
+  docker_network:
+    name: app-net
+    state: present
+  ignore_errors: no
+
+# Create a proper Docker volume
+- name: Ensure MongoDB volume exists
+  docker_volume:
+    name: app-mongo-data
+    state: present
+
+# Direct approach - Docker will fail if the container exists, so we ignore errors
 - name: Run MongoDB Container
-  docker_container:
-    name: app-mongo
-    image: mongo
-    ports:
-      - '27017:27017'
-    volumes:
-      - ./app-mongo-data:/data/db
-    networks:
-      - name: app-net
+  raw: >
+    docker rm -f app-mongo 2>/dev/null || true &&
+    docker run -d
+    --name app-mongo
+    --network app-net
+    -p 27017:27017
+    -v app-mongo-data:/data/db
+    --restart always
+    mongo
+  ignore_errors: yes
   tags:
     - database
     - backend

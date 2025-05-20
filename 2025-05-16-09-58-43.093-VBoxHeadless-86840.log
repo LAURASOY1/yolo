@@ -1,0 +1,12 @@
+Log created: 2025-05-16T09:58:43.937666000Z
+Process ID:  86840 (0x15338)
+Parent PID:  2436 (0x984)
+Executable:  /usr/lib/virtualbox/VBoxHeadless
+Arg[0]: /usr/lib/virtualbox/VBoxHeadless
+Arg[1]: --comment
+Arg[2]: ecommerce-app-vm
+Arg[3]: --startvm
+Arg[4]: fde6aac2-7680-424e-acae-6f1e0c2e2ea5
+Arg[5]: --vrde
+Arg[6]: config
+AddRef: illegal refcnt=3221225469 state=2

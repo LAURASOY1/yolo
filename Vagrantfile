@@ -14,7 +14,8 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 5000, host: 5050  # Backend API
   config.vm.network "forwarded_port", guest: 27018, host: 27019 # MongoDB
   
-  config.vm.provision "shell", path: "fix_python_apt.sh"
+  # Apply Python apt fix before any other provisioning
+  config.vm.provision "shell", path: "fix_python_apt.sh", privileged: true, run: "once"
   
   # Provisioning script
   config.vm.provision "shell", inline: <<-SHELL
@@ -34,9 +35,19 @@ Vagrant.configure("2") do |config|
     
     echo "===== Starting VM provisioning ====="
     
+    # Fix Python APT issue again in case it persists
+    if ! python3 -c "import apt_pkg" 2>/dev/null; then
+      echo "Fixing apt_pkg module again..."
+      apt-get update -y || true
+      apt-get install -y python3-apt || true
+      
+      if [ ! -e /usr/lib/python3/dist-packages/apt_pkg.cpython-38-x86_64-linux-gnu.so ] && [ -e /usr/lib/python3/dist-packages/apt_pkg.cpython-36m-x86_64-linux-gnu.so ]; then
+        ln -sf /usr/lib/python3/dist-packages/apt_pkg.cpython-36m-x86_64-linux-gnu.so /usr/lib/python3/dist-packages/apt_pkg.cpython-38-x86_64-linux-gnu.so
+      fi
+    fi
+    
     echo "Updating package index..."
-    sudo apt-get update -y
-    handle_error $? "Failed to update package index" "Package index updated successfully"
+    sudo apt-get update -y || true
     
     echo "Installing Python 3, pip, and venv..."
     sudo apt-get install -y python3 python3-pip python3-venv software-properties-common

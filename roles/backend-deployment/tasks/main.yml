@@ -1,16 +1,22 @@
 ---
 - name: Pull image from repository
   docker_image:
-    name: brianbwire/brian-yolo-backend:v1.0.0
+    name: laurasoy1/brian-yolo-backend:v1.0.0
     source: pull
-
+    state: present
+  
 - name: Create Node.js Backend Container
   docker_container:
     name: brian-yolo-backend
-    image: brianbwire/brian-yolo-backend:v1.0.0
+    image: laurasoy1/brian-yolo-backend:v1.0.0
+    state: started
+    restart_policy: always
     networks:
       - name: app-net
+    networks_cli_compatible: yes
     ports:
       - "5000:5000"
-    command: "npm start"
-  become: yes
+    env:
+      NODE_ENV: production
+      MONGO_URI: "mongodb://app-mongo:27017/ecommerce"
+    command: "node server.js"

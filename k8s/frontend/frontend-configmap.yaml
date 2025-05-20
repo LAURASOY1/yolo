@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+            try_files $uri $uri/ /index.html;
+        }
+        
+        location /api/ {
+            proxy_pass http://backend:5000/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            add_header Access-Control-Allow-Origin * always;
+            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+        }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>YOLO Products</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            h1 { color: #333; }
+            #products { margin-top: 20px; }
+            .product { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <h1>YOLO Products</h1>
+        <div id="products">Loading products...</div>
+
+        <script>
+            fetch('/api/products')
+                .then(response => response.json())
+                .then(products => {
+                    const productsDiv = document.getElementById('products');
+                    if (products.length === 0) {
+                        productsDiv.innerHTML = 'No products found.';
+                    } else {
+                        productsDiv.innerHTML = products.map(product => `
+                            <div class="product">
+                                <h3>${product.name}</h3>
+                                <p>Price: $${product.price}</p>
+                                <p>${product.description}</p>
+                            </div>
+                        `).join('');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('products').innerHTML = 'Error loading products: ' + error.message;
+                });
+        </script>
+    </body>
+    </html>

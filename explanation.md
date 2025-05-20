@@ -1,6 +1,6 @@
 # YOLO Application Deployment Explanation
 
-This document explains the architecture, implementation details, and execution order of our containerized e-commerce application deployment using Ansible.
+This document explains the architecture, implementation details and execution order of our containerized e-commerce application deployment using Ansible.
 
 ## Docker Implementation
 
